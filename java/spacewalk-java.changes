@@ -1,3 +1,4 @@
+- Fix permissions check on formula list api call (bsc#1106626)
 - Prevent failing KickstartCommand when customPosition is null (bsc#1112121)
 - Fix cloning channels when managing the same errata for both vendor and private orgs (bsc#1111686)
 - Hide 'unknown virtual host manager' when virtual host manager of all hosts is known (bsc#1119320)
