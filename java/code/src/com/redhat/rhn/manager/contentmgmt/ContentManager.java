@@ -524,18 +524,7 @@ public class ContentManager {
                 .orElseThrow(() -> new ContentManagementException("Environment " + envLabel +
                         " does not have successor"));
 
-        Map<Boolean, List<Channel>> envChannels = env.getTargets().stream()
-                .flatMap(tgt -> stream(tgt.asSoftwareTarget()))
-                .map(tgt -> tgt.getChannel())
-                .collect(partitioningBy(Channel::isBaseChannel));
-        List<Channel> baseChannels = envChannels.get(true);
-        List<Channel> childChannels = envChannels.get(false);
-
-        if (baseChannels.size() != 1) {
-            throw new IllegalStateException("Environment " + envLabel + " must have exactly one leader channel");
-        }
-
-        alignEnvironment(nextEnv, baseChannels.get(0), childChannels.stream(), emptyList(), async, user);
+        alignEnvironment2(env, nextEnv, async, user);
 
         nextEnv.setVersion(env.getVersion());
     }
@@ -647,34 +636,51 @@ public class ContentManager {
                 alignEnvironmentTarget(srcTgt.getLeft(), srcTgt.getRight(), filters, async, user));
     }
 
+    private static void alignEnvironment2(ContentEnvironment source, ContentEnvironment target, boolean async, User user) {
+        Map<Boolean, List<Channel>> envChannels = source.getTargets().stream()
+                .flatMap(tgt -> stream(tgt.asSoftwareTarget()))
+                .map(tgt -> tgt.getChannel())
+                .collect(partitioningBy(Channel::isBaseChannel));
+        List<Channel> baseChannels = envChannels.get(true);
+        List<Channel> childChannels = envChannels.get(false);
+
+        if (baseChannels.size() != 1) {
+            throw new IllegalStateException("Environment " + source + " must have exactly one leader channel");
+        }
+
+        // todo childChannels stream -> list?
+        alignEnvironment(target, baseChannels.get(0), childChannels.stream(), emptyList(), async, user);
+    }
+
     /**
      * Clone {@link Channel}s to given {@link ContentEnvironment}
      *
-     * @param env the Environment to which the Sources are cloned
+     * @param targetEnv the Environment to which the Sources are cloned
      * @param leader the "leader" Channel
      * @param channels the "non-leader" Channels
      * @param user the user
      * @return the List of [original Channel, SoftwareEnvironmentTarget] Pairs
      */
-    private static List<Pair<Channel, SoftwareEnvironmentTarget>> cloneChannelsToEnv(ContentEnvironment env,
-            Channel leader, Stream<Channel> channels, User user) {
+    private static List<Pair<Channel, SoftwareEnvironmentTarget>> cloneChannelsToEnv(
+            Optional<ContentEnvironment> sourceEnv, ContentEnvironment targetEnv, Channel leader,
+            Stream<Channel> channels, User user) {
         // first make sure the leader exists
-        SoftwareEnvironmentTarget leaderTarget = lookupTarget(leader, env, user)
+        SoftwareEnvironmentTarget leaderTarget = lookupTarget(leader, targetEnv, user)
                 .map(tgt -> {
                     tgt.getChannel().setParentChannel(null);
                     return tgt;
                 })
-                .orElseGet(() -> createSoftwareTarget(leader, empty(), env, user));
+                .orElseGet(() -> createSoftwareTarget(leader, empty(), targetEnv, user));
 
         // then do the same with the children
         Stream<Pair<Channel, SoftwareEnvironmentTarget>> nonLeaderTargets = channels
-                .map(src -> lookupTarget(src, env, user)
+                .map(src -> lookupTarget(src, targetEnv, user)
                         .map(tgt -> {
                             tgt.getChannel().setParentChannel(leaderTarget.getChannel());
                             return Pair.of(src, tgt);
                         })
                         .orElseGet(() ->
-                                Pair.of(src, createSoftwareTarget(src, of(leaderTarget.getChannel()), env, user))));
+                                Pair.of(src, createSoftwareTarget(src, of(leaderTarget.getChannel()), targetEnv, user))));
 
         return Stream.concat(
                 Stream.of(Pair.of(leader, leaderTarget)),
@@ -716,7 +722,7 @@ public class ContentManager {
      * @param env the Environment
      * @return the prefixed channel label
      */
-    private static String channelLabelInEnvironment(String srcChannelLabel, ContentEnvironment env) {
+    private static String channelLabelInEnvironment(String srcChannelLabel, ContentEnvironment env) { // todo one more param (srcEnv)
         String envPrefix = prefixString(env);
         return env.getPrevEnvironmentOpt()
                 .map(prevEnv -> srcChannelLabel.replaceAll("^" + prefixString(prevEnv), envPrefix))
