@@ -16,6 +16,14 @@
 
 package com.redhat.rhn.domain.contentmgmt.test;
 
+import static com.redhat.rhn.domain.contentmgmt.ProjectSource.Type.SW_CHANNEL;
+import static com.redhat.rhn.domain.contentmgmt.ProjectSource.Type.lookupByLabel;
+import static com.redhat.rhn.domain.role.RoleFactory.ORG_ADMIN;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
+
 import com.redhat.rhn.common.hibernate.HibernateFactory;
 import com.redhat.rhn.domain.channel.Channel;
 import com.redhat.rhn.domain.channel.ChannelFactory;
@@ -38,16 +46,10 @@ import com.redhat.rhn.testing.BaseTestCaseWithUser;
 import com.redhat.rhn.testing.ChannelTestUtils;
 import com.redhat.rhn.testing.UserTestUtils;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-
-import static com.redhat.rhn.domain.contentmgmt.ProjectSource.Type.SW_CHANNEL;
-import static com.redhat.rhn.domain.contentmgmt.ProjectSource.Type.lookupByLabel;
-import static com.redhat.rhn.domain.role.RoleFactory.ORG_ADMIN;
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
+import java.util.Set;
 
 /**
  * Tests for {@link com.redhat.rhn.domain.contentmgmt.ContentProjectFactory}
@@ -568,5 +570,50 @@ public class ContentProjectFactoryTest extends BaseTestCaseWithUser {
         assertEquals(cp, ContentProjectFactory.listFilterProjects(filter).get(0));
         cp.detachFilter(filter);
         assertTrue(ContentProjectFactory.listFilterProjects(filter).isEmpty());
+    }
+
+    // todo
+    public void testLookupProjectChannelWithSuffix() throws Exception {
+        var channelSuffix = "testlabel123";
+        var project = new ContentProject("cplabel", "cpname", "cpdesc", user.getOrg());
+        ContentProjectFactory.save(project);
+        var devEnv = new ContentEnvironment("dev", "Development", null, project);
+        ContentProjectFactory.save(devEnv);
+        project.setFirstEnvironment(devEnv);
+        var devChannel = ChannelTestUtils.createBaseChannel(user);
+        devChannel.setLabel("cplabel-dev-" + channelSuffix);
+        var devTarget = new SoftwareEnvironmentTarget(devEnv, devChannel);
+        ContentProjectFactory.save(devTarget);
+
+
+        // todo create a "hole" environment
+        var testEnv = new ContentEnvironment("test", "Test", null, project);
+        ContentProjectFactory.save(testEnv);
+        project.setFirstEnvironment(testEnv);
+        var testChannel = ChannelTestUtils.createBaseChannel(user);
+        testChannel.setLabel("cplabel-test-" + channelSuffix);
+        var testTarget = new SoftwareEnvironmentTarget(testEnv, testChannel);
+        ContentProjectFactory.save(testTarget);
+
+        assertEquals(
+                Set.of(devTarget, testTarget),
+                new HashSet<>(ContentProjectFactory.lookupSuccessorTargets(channelSuffix, project)));
+    }
+
+    // todo
+    public void testLookupProjectChannelWithSuffix2() throws Exception {
+        var channelSuffix = "testlabel123";
+        var project = new ContentProject("cplabel", "cpname", "cpdesc", user.getOrg());
+        ContentProjectFactory.save(project);
+        var devEnv = new ContentEnvironment("dev", "Development", null, project);
+        ContentProjectFactory.save(devEnv);
+        project.setFirstEnvironment(devEnv);
+        var devChannel = ChannelTestUtils.createBaseChannel(user);
+        devChannel.setLabel("cplabel-dev-" + channelSuffix + "-trololo");
+        var devTarget = new SoftwareEnvironmentTarget(devEnv, devChannel);
+        ContentProjectFactory.save(devTarget);
+
+        // todo probably not needed test
+        assertTrue(ContentProjectFactory.lookupSuccessorTargets(channelSuffix, project).isEmpty());
     }
 }

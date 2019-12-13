@@ -15,18 +15,19 @@
 
 package com.redhat.rhn.domain.contentmgmt;
 
+import static java.util.Optional.of;
+
 import com.redhat.rhn.domain.channel.Channel;
-import com.redhat.rhn.domain.channel.ClonedChannel;
+import com.redhat.rhn.manager.contentmgmt.ContentManager;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Optional;
+
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.OneToOne;
-
-import static java.util.Optional.of;
 
 /**
  * Content Environment Target targeting software Channel
@@ -114,8 +115,8 @@ public class SoftwareEnvironmentTarget extends EnvironmentTarget {
      *
      * @return the optional of the successor {@link Channel}
      */
-    public Optional<ClonedChannel> findSuccessorChannel() {
-        return ContentProjectFactory.lookupSuccessorChannel(channel, getContentEnvironment().getContentProject());
+    public Optional<Channel> findSuccessorChannel() {
+        return ContentManager.lookupSuccessorAfterEnv(getChannel(), getContentEnvironment());
     }
 
     /**

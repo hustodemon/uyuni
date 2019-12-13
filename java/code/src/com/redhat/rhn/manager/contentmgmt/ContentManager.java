@@ -62,7 +62,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static com.redhat.rhn.domain.contentmgmt.ContentProjectFactory.lookupSuccessorChannel;
 import static com.redhat.rhn.domain.contentmgmt.ContentProjectFactory.prefixString;
 import static com.redhat.rhn.domain.contentmgmt.ProjectSource.State.ATTACHED;
 import static com.redhat.rhn.domain.contentmgmt.ProjectSource.State.BUILT;
@@ -78,6 +77,7 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.partitioningBy;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -706,7 +706,9 @@ public class ContentManager {
 
     private static SoftwareEnvironmentTarget createSoftwareTarget(Channel sourceChannel, Optional<Channel> leader,
             ContentEnvironment env, User user) {
-        Optional<ClonedChannel> oldSuccessor = lookupSuccessorChannel(sourceChannel, env.getContentProject());
+        // todo not clone handling
+        Optional<ClonedChannel> oldSuccessor = ContentManager.lookupSuccessorAfterEnv(sourceChannel, env).flatMap(c -> c.asCloned());// todo
+
         String targetLabel = channelLabelInEnvironment(sourceChannel.getLabel(), env);
 
         Channel targetChannel = ofNullable(ChannelFactory.lookupByLabelAndUser(targetLabel, user))
@@ -741,6 +743,38 @@ public class ContentManager {
         return env.getPrevEnvironmentOpt()
                 .map(prevEnv -> srcChannelLabel.replaceAll("^" + prefixString(prevEnv), envPrefix))
                 .orElse(envPrefix + srcChannelLabel);
+    }
+
+    /**
+     * todo
+     *
+     * @param suffix
+     * @param environment
+     * @return
+     */
+    public static Optional<Channel> lookupSuccessorAfterEnv(Channel channel, ContentEnvironment environment) {
+        // todo move this logic somewhere
+        String suffix = channel.getLabel().replaceFirst("^" + ContentProjectFactory.prefixString(environment), "");
+        Map<ContentEnvironment, SoftwareEnvironmentTarget> successorsByEnvironment =
+                ContentProjectFactory.lookupSuccessorTargets(suffix, environment.getContentProject()).stream()
+                        .collect(toMap(
+                                tgt -> tgt.getContentEnvironment(),
+                                tgt -> tgt));
+
+        return environment.getNextEnvironmentOpt()
+                .flatMap(next -> lookupSuccessor(next, successorsByEnvironment))
+                .map(tgt -> tgt.getChannel());
+    }
+
+    // recursively go through Environment Path and look for match in given map
+    private static Optional<SoftwareEnvironmentTarget> lookupSuccessor(
+            ContentEnvironment env,
+            Map<ContentEnvironment, SoftwareEnvironmentTarget> successorsByEnvironment) {
+        if (successorsByEnvironment.containsKey(env)) {
+            return of(successorsByEnvironment.get(env));
+        }
+
+        return env.getNextEnvironmentOpt().flatMap(next -> lookupSuccessor(next, successorsByEnvironment));
     }
 
     private static ContentProjectHistoryEntry addHistoryEntry(

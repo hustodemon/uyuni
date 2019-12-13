@@ -15,27 +15,31 @@
 
 package com.redhat.rhn.domain.contentmgmt;
 
+import static com.suse.utils.Opt.consume;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Optional.empty;
+
 import com.redhat.rhn.common.hibernate.HibernateFactory;
 import com.redhat.rhn.domain.channel.Channel;
 import com.redhat.rhn.domain.channel.ChannelFactory;
-import com.redhat.rhn.domain.channel.ClonedChannel;
 import com.redhat.rhn.domain.contentmgmt.ProjectSource.Type;
 import com.redhat.rhn.domain.org.Org;
 import com.redhat.rhn.domain.user.User;
+import com.redhat.rhn.manager.channel.ChannelManager;
+
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
-
-import static com.suse.utils.Opt.consume;
-import static java.util.Collections.unmodifiableList;
-import static java.util.Optional.empty;
 
 /**
  *  HibernateFactory for the {@link com.redhat.rhn.domain.contentmgmt.ContentProject} class and related classes.
@@ -293,12 +297,16 @@ public class ContentProjectFactory extends HibernateFactory {
         // firstly fix the original/clone relations of channels
         Optional<Channel> prevChannel = target.asSoftwareTarget()
                 .flatMap(tgt -> tgt.findPredecessorChannel());
-        Optional<ClonedChannel> nextChannel = target.asSoftwareTarget()
+        Optional<Channel> nextChannel = target.asSoftwareTarget()
                 .flatMap(tgt -> tgt.findSuccessorChannel())
                 .map(c -> c.asCloned().orElseThrow(() ->
                         new IllegalStateException("Target channel must be a clone: " + c)));
         // if both next and previous channel exist -> fix the original-clone relation
-        nextChannel.ifPresent(next -> prevChannel.ifPresent(prev -> next.setOriginal(prev)));
+        nextChannel.ifPresent(next -> prevChannel.ifPresent(prev -> // todo foooo
+                next.asCloned().ifPresentOrElse(n -> n.setOriginal(prev), () -> {
+                    log.warn("Channel is not a clone: " + next + ". Adding clone info.");
+                    ChannelManager.addCloneInfo(prev.getId(), next.getId());
+                })));
 
         // then remove the target and its channel
         target.getContentEnvironment().removeTarget(target);
@@ -306,7 +314,7 @@ public class ContentProjectFactory extends HibernateFactory {
         target.asSoftwareTarget().ifPresent(swTgt -> ChannelFactory.remove(swTgt.getChannel()));
     }
 
-    /**
+    /** todo group with the new stuff
      * Looks up SoftwareEnvironmentTarget with a given channel
      *
      * @param label the {@link Channel} label
@@ -447,20 +455,18 @@ public class ContentProjectFactory extends HibernateFactory {
 
     /**
      * Look up a successor (cloned) {@link Channel} of given {@link Channel} in given {@link ContentProject}
-     *
-     * @param channel the channel
+     * todo
      * @param project the project
      * @return the successor of the channel in the project
      */
-    public static Optional<ClonedChannel> lookupSuccessorChannel(Channel channel, ContentProject project) {
-        Optional<Channel> successor = HibernateFactory.getSession()
-                .createQuery("SELECT tgt.channel FROM SoftwareEnvironmentTarget tgt " +
+    public static Set<SoftwareEnvironmentTarget> lookupSuccessorTargets(String suffix, ContentProject project) {
+        return new HashSet<>(HibernateFactory.getSession()
+                .createQuery("SELECT tgt FROM SoftwareEnvironmentTarget tgt " +
                         "WHERE tgt.contentEnvironment.contentProject = :project " +
-                        "AND tgt.channel.original = :channel")
+                        "AND tgt.channel.label LIKE :suffix")
                 .setParameter("project", project)
-                .setParameter("channel", channel)
-                .uniqueResultOptional();
-        return successor.flatMap(Channel::asCloned);
+                .setParameter("suffix", "%" + suffix)
+                .list());
     }
 
     /**
@@ -616,7 +622,7 @@ public class ContentProjectFactory extends HibernateFactory {
      * @param env the Environment
      * @return the prefix
      */
-    public static String prefixString(ContentEnvironment env) {
+    public static String prefixString(ContentEnvironment env) { // todo move to ContentEnvironment
         return env.getContentProject().getLabel() + DELIMITER + env.getLabel() + DELIMITER;
     }
 
