@@ -53,6 +53,23 @@ public class MaintenanceWindowJson {
     private List<Map<String, String>> maintenanceWindows;
 
     /**
+     * Constructor
+     */
+    public MaintenanceWindowJson() { }
+
+    /**
+     * Constructor
+     * @param calendarIdIn calendar id
+     * @param calendarNameIn calenar name
+     * @param scheduleNamesIn schedule names
+     */
+    public MaintenanceWindowJson(Long calendarIdIn, String calendarNameIn, List<Map<String, String>> scheduleNamesIn) {
+        this.calendarId = calendarIdIn;
+        this.calendarName = calendarNameIn;
+        this.scheduleNames = scheduleNamesIn;
+    }
+
+    /**
      * Gets the id of the schedule
      *
      * @return the scheduleId

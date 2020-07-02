@@ -33,9 +33,6 @@ import com.redhat.rhn.domain.user.User;
 import com.redhat.rhn.manager.EntityExistsException;
 import com.redhat.rhn.manager.EntityNotExistsException;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import com.suse.manager.maintenance.IcalUtils;
 import com.suse.manager.maintenance.MaintenanceManager;
 import com.suse.manager.maintenance.rescheduling.RescheduleResult;
@@ -47,6 +44,11 @@ import com.suse.manager.reactor.utils.LocalDateTimeISOAdapter;
 import com.suse.manager.reactor.utils.OptionalTypeAdapterFactory;
 import com.suse.manager.webui.utils.gson.MaintenanceWindowJson;
 import com.suse.manager.webui.utils.gson.ResultJson;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpStatus;
 
 import java.time.LocalDateTime;
@@ -57,6 +59,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.persistence.Tuple;
 
 import spark.ModelAndView;
 import spark.Request;
@@ -160,8 +164,30 @@ public class MaintenanceController {
      * @return the result JSON object
      */
     public static String listCalendars(Request request, Response response, User user) {
-        List<MaintenanceCalendar> calendars = MM.listCalendarsByUser(user);
-        return json(response, calendarsToJson(user, calendars));
+        Map<Pair<Long, String>, List<Tuple>> assignmentsByCalendar = MM
+                .listCalendarToSchedulesAssigments(user)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        tuple -> Pair.of(tuple.get(0, Long.class), tuple.get(1, String.class)),
+                        Collectors.mapping(
+                                tuple -> tuple,
+                                Collectors.toList())));
+
+        List<MaintenanceWindowJson> calendarsWithSchedules = assignmentsByCalendar.entrySet().stream()
+                .map(entry -> {
+                    Long calId = entry.getKey().getKey();
+                    String calName = entry.getKey().getValue();
+                    List<Map<String, String>> schedules = entry.getValue().stream()
+                            .filter(tuple -> tuple.get(2) != null) // schedule id != null
+                            .map(tuple -> Map.of(
+                                    "id", tuple.get(2, Long.class).toString(),
+                                    "name", tuple.get(3, String.class)))
+                            .collect(Collectors.toList());
+                    return new MaintenanceWindowJson(calId, calName, schedules);
+                })
+                .collect(Collectors.toList());
+
+        return json(response, calendarsWithSchedules);
     }
 
     /**
@@ -477,10 +503,6 @@ public class MaintenanceController {
         return schedules.stream().map(MaintenanceController::scheduleToJson).collect(Collectors.toList());
     }
 
-    private static List<MaintenanceWindowJson> calendarsToJson(User user, List<MaintenanceCalendar> calendars) {
-        return calendars.stream().map(calendar -> calendarToJson(user, calendar)).collect(Collectors.toList());
-    }
-
     private static MaintenanceWindowJson scheduleToJson(MaintenanceSchedule schedule) {
         MaintenanceWindowJson json = new MaintenanceWindowJson();
 
@@ -490,22 +512,6 @@ public class MaintenanceController {
             json.setCalendarId(maintenanceCalendar.getId());
             json.setCalendarName(maintenanceCalendar.getLabel());
         });
-
-        return json;
-    }
-
-    private static MaintenanceWindowJson calendarToJson(User user, MaintenanceCalendar calendar) {
-        MaintenanceWindowJson json = new MaintenanceWindowJson();
-
-        json.setCalendarId(calendar.getId());
-        json.setCalendarName(calendar.getLabel());
-
-        json.setScheduleNames(MM.listSchedulesByCalendar(user, calendar).stream().map(
-                schedule -> Map.of(
-                        "id", schedule.getId().toString(),
-                        "name", schedule.getName()
-                )
-        ).collect(Collectors.toList()));
 
         return json;
     }
