@@ -38,6 +38,7 @@ import com.suse.manager.maintenance.MaintenanceManager;
 import com.suse.manager.maintenance.rescheduling.RescheduleResult;
 import com.suse.manager.maintenance.rescheduling.RescheduleStrategy;
 import com.suse.manager.maintenance.rescheduling.RescheduleStrategyType;
+import com.suse.manager.model.maintenance.CalendarAssignment;
 import com.suse.manager.model.maintenance.MaintenanceCalendar;
 import com.suse.manager.model.maintenance.MaintenanceSchedule;
 import com.suse.manager.reactor.utils.LocalDateTimeISOAdapter;
@@ -59,8 +60,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import javax.persistence.Tuple;
 
 import spark.ModelAndView;
 import spark.Request;
@@ -164,11 +163,11 @@ public class MaintenanceController {
      * @return the result JSON object
      */
     public static String listCalendars(Request request, Response response, User user) {
-        Map<Pair<Long, String>, List<Tuple>> assignmentsByCalendar = MM
+        Map<Pair<Long, String>, List<CalendarAssignment>> assignmentsByCalendar = MM
                 .listCalendarToSchedulesAssigments(user)
                 .stream()
                 .collect(Collectors.groupingBy(
-                        tuple -> Pair.of(tuple.get(0, Long.class), tuple.get(1, String.class)),
+                        assignment -> Pair.of(assignment.getCalendarId(), assignment.getCalendarName()),
                         Collectors.mapping(
                                 tuple -> tuple,
                                 Collectors.toList())));
@@ -178,10 +177,10 @@ public class MaintenanceController {
                     Long calId = entry.getKey().getKey();
                     String calName = entry.getKey().getValue();
                     List<Map<String, String>> schedules = entry.getValue().stream()
-                            .filter(tuple -> tuple.get(2) != null) // schedule id != null
+                            .filter(tuple -> tuple.getScheduleId() != null) // schedule id != null
                             .map(tuple -> Map.of(
-                                    "id", tuple.get(2, Long.class).toString(),
-                                    "name", tuple.get(3, String.class)))
+                                    "id", tuple.getScheduleId().toString(),
+                                    "name", tuple.getScheduleName()))
                             .collect(Collectors.toList());
                     return new MaintenanceWindowJson(calId, calName, schedules);
                 })
