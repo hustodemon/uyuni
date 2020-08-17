@@ -78,7 +78,7 @@ public class AutoErrataTask extends RhnJavaJob {
                 Org org = OrgFactory.lookupById(orgId);
                 ErrataAction errataAction = ActionManager.
                         createErrataAction(org, errata);
-                ActionManager.addServerToAction(serverId, errataAction);
+                ActionManager.addServerToAction(serverId, errataAction); // todo maint.
                 ActionManager.storeAction(errataAction);
                 actionsToSchedule.add(errataAction);
             }

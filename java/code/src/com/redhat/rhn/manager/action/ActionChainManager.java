@@ -442,7 +442,7 @@ public class ActionChainManager {
 
             for (Server server : servers) {
                 ActionManager.checkConfigActionOnServer(type, server);
-                ActionFactory.addServerToAction(server.getId(), action);
+                ActionFactory.addServerToAction(server.getId(), action); // todo maint.
 
                 ActionManager.addConfigurationRevisionsToAction(user,
                     revisions.get(server.getId()), action, server);

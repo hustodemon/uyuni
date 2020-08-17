@@ -193,7 +193,7 @@ public class SaltReactor {
                SystemIdGenerateEvent.parse(event).map(this::eventToMessages).orElseGet(() ->
                ImageDeployedEvent.parse(event).map(this::eventToMessages).orElseGet(() ->
                EngineEvent.parse(event).map(this::eventToMessages).orElseGet(() ->
-               BeaconEvent.parse(event).map(this::eventToMessages).orElse(
+               BeaconEvent.parse(event).map(this::eventToMessages).orElse( // todo wtf can we see multi servers here?
                empty()
         )))))));
     }

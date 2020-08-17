@@ -587,7 +587,7 @@ public class ActionManager extends BaseManager {
         ConfigAction a = createConfigAction(user, type, earliest);
         for (Server server : servers) {
             checkConfigActionOnServer(type, server);
-            ActionFactory.addServerToAction(server.getId(), a);
+            ActionFactory.addServerToAction(server.getId(), a); // todo maint
 
             //now that we made a server action, we must make config revision actions
             //which depend on the server as well.

@@ -756,7 +756,7 @@ public class SaltServerActionService {
                         LOG.info("Scheduling a package profile update for minion " + minionId);
                         try {
                             Action pkgList = ActionManager
-                                    .schedulePackageRefresh(minion.getOrg(), minion);
+                                    .schedulePackageRefresh(minion.getOrg(), minion); // todo here?
                             executeSSHAction(pkgList, minion);
                         }
                         catch (TaskomaticApiException e) {
@@ -2237,7 +2237,7 @@ public class SaltServerActionService {
                         LOG.info("Scheduling a package profile update");
                         Action pkgList;
                         try {
-                            pkgList = ActionManager.schedulePackageRefresh(minion.getOrg(), minion);
+                            pkgList = ActionManager.schedulePackageRefresh(minion.getOrg(), minion); // todo here?
                             executeSSHAction(pkgList, minion);
                         }
                         catch (TaskomaticApiException e) {

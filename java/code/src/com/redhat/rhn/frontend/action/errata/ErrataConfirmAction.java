@@ -120,7 +120,7 @@ public class ErrataConfirmAction extends RhnListDispatchAction {
 
         if (actionChain == null) {
             Action update = ActionManager.createErrataAction(user, currentErrata);
-            for (int i = 0; i < systems.size(); i++) {
+            for (int i = 0; i < systems.size(); i++) { // todo maint.
                 ActionManager.addServerToAction(
                         ((SystemOverview) systems.get(i)).getId(),
                         update);

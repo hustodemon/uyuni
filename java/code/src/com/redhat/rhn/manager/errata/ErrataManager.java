@@ -1950,7 +1950,7 @@ public class ErrataManager extends BaseManager {
 
         // 1- compute actions for traditional clients running yum
         // those get one Action per system, per errata (yum is known to have problems)
-        Stream<ErrataAction> nonZypperTradClientActions = nonZypperTradClients.stream()
+        Stream<ErrataAction> nonZypperTradClientActions = nonZypperTradClients.stream() // todo maint.
             .flatMap(sid -> serverErrataMap.get(sid).stream()
                 .sorted((a, b) -> updateStackMap.get(b).compareTo(updateStackMap.get(a)))
                 .map(eid -> createErrataActionForNonZypperTradClient(user,
@@ -2142,7 +2142,7 @@ public class ErrataManager extends BaseManager {
 
         errataUpdate.setName(getErrataName(errata, updateStack));
 
-        servers.stream().forEach(s -> ActionManager.addServerToAction(s, errataUpdate));
+        servers.stream().forEach(s -> ActionManager.addServerToAction(s, errataUpdate)); // todo here problem with maint
 
         return Stream.of(errataUpdate);
     }

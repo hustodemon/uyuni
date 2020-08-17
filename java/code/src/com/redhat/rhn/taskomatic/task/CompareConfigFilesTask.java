@@ -70,7 +70,7 @@ public class CompareConfigFilesTask extends RhnJavaJob {
             act.setOrg(server.getOrg());
 
             // add the server to the action
-            ActionFactory.addServerToAction(server, act);
+            ActionFactory.addServerToAction(server, act); // todo maint.
 
             // add file revisions to the action
             for (ConfigFileNameDto cfn : cm.listAllFileNamesForSystem(server)) {
