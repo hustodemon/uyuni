@@ -743,10 +743,14 @@ class RepoSync(object):
 
     @staticmethod
     def _get_decompressed_file_checksum(abspath, hashtype):
-        with fileutils.decompress_open(abspath) as src, tempfile.TemporaryFile('w') as tmp:
-            shutil.copyfileobj(src, tmp)
-            tmp.flush()
-            return getFileChecksum(hashtype, fd=tmp.fileno())
+        src = fileutils.decompress_open(abspath)
+        tmp = tempfile.TemporaryFile('w')
+        shutil.copyfileobj(src, tmp)
+        tmp.flush()
+        result = getFileChecksum(hashtype, fd=tmp.fileno())
+        tmp.close()
+        src.close()
+        return result
 
     def copy_metadata_file(self, plug, filename, comps_type, relative_dir):
         old_checksum = None
