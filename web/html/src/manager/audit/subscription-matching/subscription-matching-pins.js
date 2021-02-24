@@ -1,32 +1,38 @@
-/* eslint-disable */
-"use strict";
+import * as React from "react";
+import { Table } from "components/table/Table";
+import { Column } from "components/table/Column";
+import { SearchField } from "components/table/SearchField";
+import { PopUp } from "components/popup";
+import { ModalButton } from "components/dialog/ModalButton";
+import { SystemLabel, ToolTip, humanReadablePolicy } from "./subscription-matching-util";
+import { WarningIcon } from "./subscription-matching-util";
+import Network from "utils/network";
+import { Utils } from "utils/functions";
+import isNil from "lodash/isNil";
 
-import * as React from 'react';
-import { Table } from 'components/table/Table';
-import { Column } from 'components/table/Column';
-import { SearchField } from 'components/table/SearchField';
-import { Highlight } from 'components/table/Highlight';
-import { PopUp } from 'components/popup';
-import { ModalButton } from 'components/dialog/ModalButton';
-import { StrongText, SystemLabel, ToolTip, humanReadablePolicy } from './subscription-matching-util';
-import { WarningIcon } from './subscription-matching-util';
-import Network from 'utils/network';
-import { Utils } from 'utils/functions';
+type PinsProps = {
+  pinnedMatches: any[];
+  onPinChanged: (...args: any[]) => any;
+  products: any[];
+  systems: any[];
+  subscriptions: any[];
+};
 
-class Pins extends React.Component {
+class Pins extends React.Component<PinsProps> {
   state = {
-    showPopUp: false
+    showPopUp: false,
   };
 
-  buildRows = (props) => {
-    const {pinnedMatches, systems, subscriptions} = props;
+  buildRows = props => {
+    const { pinnedMatches, systems, subscriptions } = props;
 
-    return pinnedMatches.map((p) => {
+    return pinnedMatches.map(p => {
       const system = systems[p.systemId];
       const systemName = system == null ? "System " + p.systemId : system.name;
       const systemType = system == null ? null : system.type;
       const subscription = subscriptions[p.subscriptionId];
-      const subscriptionDescription = subscription == null ? "Subscription " + p.subscriptionId : subscription.description;
+      const subscriptionDescription =
+        subscription == null ? "Subscription " + p.subscriptionId : subscription.description;
       const subscriptionPolicy = subscription == null ? " " : subscription.policy;
       const subscriptionEndDate = subscription == null ? " " : subscription.endDate;
       const subscriptionPartNumber = subscription == null ? "" : subscription.partNumber;
@@ -40,99 +46,126 @@ class Pins extends React.Component {
         subscriptionPolicy: subscriptionPolicy,
         subscriptionEndDate: subscriptionEndDate,
         subscriptionPartNumber: subscriptionPartNumber,
-        status: p.status
+        status: p.status,
       };
     });
   };
 
-  onRemovePin = (pinId) => {
-    Network.post("/rhn/manager/api/subscription-matching/pins/"+pinId+"/delete")
-      .promise.then(data => this.props.onPinChanged(data));
+  onRemovePin = pinId => {
+    Network.post("/rhn/manager/api/subscription-matching/pins/" + pinId + "/delete").promise.then(data =>
+      this.props.onPinChanged(data)
+    );
   };
 
   showPopUp = () => {
-    this.setState({showPopUp: true});
+    this.setState({ showPopUp: true });
   };
 
   closePopUp = () => {
-    this.setState({showPopUp: false});
+    this.setState({ showPopUp: false });
   };
 
   savePin = (systemId, subscriptionId) => {
-    Network.post("/rhn/manager/api/subscription-matching/pins", {system_id: systemId, subscription_id: subscriptionId})
-      .promise.then(data => this.props.onPinChanged(data));
+    Network.post("/rhn/manager/api/subscription-matching/pins", {
+      system_id: systemId,
+      subscription_id: subscriptionId,
+    }).promise.then(data => this.props.onPinChanged(data));
     jQuery("#addPinPopUp").modal("hide"); //to trigger popup close action
     this.closePopUp();
   };
 
   render() {
-    const popUpContent = this.state.showPopUp ? <AddPinPopUp products={this.props.products} systems={this.props.systems} subscriptions={this.props.subscriptions} onSavePin={this.savePin} /> : null;
+    const popUpContent = this.state.showPopUp ? (
+      <AddPinPopUp
+        products={this.props.products}
+        systems={this.props.systems}
+        subscriptions={this.props.subscriptions}
+        onSavePin={this.savePin}
+      />
+    ) : null;
     return (
       <div className="row col-md-12">
         <h2>{t("Pins")}</h2>
         <p>
           {t("You can pin a subscription to a system to suggest a certain association to the matching algorithm. ")}
           <br />
-          {t("Next time a matching is attempted, the algorithm will try to produce a result that applies the subscription to the system you specified. ")}
+          {t(
+            "Next time a matching is attempted, the algorithm will try to produce a result that applies the subscription to the system you specified. "
+          )}
           <br />
           {t("Note that the algorithm might determine that a certain pin cannot be respected, ")}
-          {t("depending on a subscription's availablility and applicability rules, in that case it will be shown as not satisfied. ")}
+          {t(
+            "depending on a subscription's availablility and applicability rules, in that case it will be shown as not satisfied. "
+          )}
         </p>
 
-        {this.props.pinnedMatches.length > 0 ?
-          <Table key="table"
+        {this.props.pinnedMatches.length > 0 ? (
+          <Table
+            key="table"
             data={this.buildRows(this.props)}
-            identifier={(row) => row.id}
-            initialItemsPerPage={userPrefPageSize}
+            identifier={row => row.id}
+            initialItemsPerPage={window.userPrefPageSize}
             initialSortColumnKey="systemName"
-            >
+          >
             <Column
-                columnKey="systemName"
-                comparator={Utils.sortByText}
-                header={t("Part number")}
-                cell={ (p) => <SystemLabel id={p.systemId} name={p.systemName} type={p.systemType} /> }
-                />
+              columnKey="systemName"
+              comparator={Utils.sortByText}
+              header={t("Part number")}
+              cell={p => <SystemLabel id={p.systemId} name={p.systemName} type={p.systemType} />}
+            />
             <Column
-                columnKey="subscriptionDescription"
-                comparator={Utils.sortByText}
-                header={t("Subscription")}
-                cell={ (p) => p.subscriptionDescription }
-                />
+              columnKey="subscriptionDescription"
+              comparator={Utils.sortByText}
+              header={t("Subscription")}
+              cell={p => p.subscriptionDescription}
+            />
             <Column
-                columnKey="subscriptionPolicy"
-                comparator={Utils.sortByText}
-                header={t("Policy")}
-                cell={ (p) => humanReadablePolicy(p.subscriptionPolicy) }
-                />
+              columnKey="subscriptionPolicy"
+              comparator={Utils.sortByText}
+              header={t("Policy")}
+              cell={p => humanReadablePolicy(p.subscriptionPolicy)}
+            />
             <Column
-                columnKey="subscriptionEndDate"
-                comparator={Utils.sortByText}
-                header={t("End date")}
-                cell={ (p) => <ToolTip content={moment(p.subscriptionEndDate).fromNow()}
-                                title={moment(p.subscriptionEndDate).format("LL")} /> }
+              columnKey="subscriptionEndDate"
+              comparator={Utils.sortByText}
+              header={t("End date")}
+              cell={p => (
+                <ToolTip
+                  content={moment(p.subscriptionEndDate).fromNow()}
+                  title={moment(p.subscriptionEndDate).format("LL")}
                 />
+              )}
+            />
             <Column
-                columnKey="subscriptionPartNumber"
-                comparator={Utils.sortByText}
-                header={t("Part number")}
-                cell={ (p) => p.subscriptionPartNumber }
-                />
+              columnKey="subscriptionPartNumber"
+              comparator={Utils.sortByText}
+              header={t("Part number")}
+              cell={p => p.subscriptionPartNumber}
+            />
             <Column
-                columnKey="status"
-                comparator={Utils.sortByText}
-                header={t("Status")}
-                cell={ (p) => <PinStatus status={p.status} /> }
-                />
+              columnKey="status"
+              comparator={Utils.sortByText}
+              header={t("Status")}
+              cell={p => <PinStatus status={p.status} />}
+            />
             <Column
-                columnKey="actions"
-                cell={ (p) => <PinButton
-                      onClick={() => this.onRemovePin(p.id)}
-                      content={<span><i className="fa fa-trash-o"></i>{t("Delete Pin")}</span>}
-                      /> }
+              columnKey="actions"
+              cell={p => (
+                <PinButton
+                  onClick={() => this.onRemovePin(p.id)}
+                  content={
+                    <span>
+                      <i className="fa fa-trash-o"></i>
+                      {t("Delete Pin")}
+                    </span>
+                  }
                 />
+              )}
+            />
           </Table>
-          :
-          <p>{t("No pins defined. You can create one with the button below.")}</p>}
+        ) : (
+          <p>{t("No pins defined. You can create one with the button below.")}</p>
+        )}
 
         <ModalButton
           className="btn-primary"
@@ -154,47 +187,69 @@ class Pins extends React.Component {
   }
 }
 
-const PinStatus = (props) => {
-  if (props.status == "pending") {
-    return <span><i className="fa fa-hourglass-start"></i><em>{t("pending next run")}</em></span>;
+const PinStatus = props => {
+  if (props.status === "pending") {
+    return (
+      <span>
+        <i className="fa fa-hourglass-start"></i>
+        <em>{t("pending next run")}</em>
+      </span>
+    );
   }
-  if (props.status == "satisfied") {
-    return <span><i className="fa fa-check text-success"></i>{t("satisfied")}</span>;
+  if (props.status === "satisfied") {
+    return (
+      <span>
+        <i className="fa fa-check text-success"></i>
+        {t("satisfied")}
+      </span>
+    );
   }
-  return <span><WarningIcon />{t("not satisfied")}</span>;
-}
+  return (
+    <span>
+      <WarningIcon />
+      {t("not satisfied")}
+    </span>
+  );
+};
 
-const PinButton = (props) =>
+const PinButton = props => (
   <button className="btn btn-default btn-cell" onClick={props.onClick}>
     {props.content}
   </button>
-;
+);
 
-class AddPinPopUp extends React.Component {
+type AddPinPopUpProps = {
+  onSavePin: (...args: any[]) => any;
+  systems: any[];
+  products: any[];
+  subscriptions: any[];
+};
+
+class AddPinPopUp extends React.Component<AddPinPopUpProps> {
   state = {
-    systemId: null
+    systemId: null,
   };
 
   sortByCpuCount = (a, b, columnKey, sortDirection) => {
-    var result = a[columnKey]- b[columnKey];
+    var result = a[columnKey] - b[columnKey];
     return (result || Utils.sortById(a, b)) * sortDirection;
   };
 
   buildRows = () => {
-    return Object.keys(this.props.systems).map((id) => {
+    return Object.keys(this.props.systems).map(id => {
       return this.props.systems[id];
     });
   };
 
   onBackClicked = () => {
-    this.setState({systemId: null});
+    this.setState({ systemId: null });
   };
 
-  onSystemSelected = (systemId) => {
-    this.setState({systemId: systemId});
+  onSystemSelected = systemId => {
+    this.setState({ systemId: systemId });
   };
 
-  onSubscriptionSelected = (subscriptionId) => {
+  onSubscriptionSelected = subscriptionId => {
     this.props.onSavePin(this.state.systemId, subscriptionId);
   };
 
@@ -207,63 +262,68 @@ class AddPinPopUp extends React.Component {
 
   render() {
     var popUpContent;
-    if (this.state.systemId == null) {
+    const systemId = this.state.systemId;
+
+    if (isNil(systemId)) {
       popUpContent = (
         <div>
           <h4 className="add-pin-popup-subtitle">{t("Available Systems")}</h4>
           <p>{t("Step 1/2: select the system to pin from the table below.")}</p>
 
-          <Table key="table"
+          <Table
+            key="table"
             data={this.buildRows()}
-            identifier={(row) => row.id}
+            identifier={row => row.id}
             initialSortColumnKey="name"
-            initialItemsPerPage={userPrefPageSize}
-            searchField={
-                <SearchField filter={this.searchData}
-                    placeholder={t("Filter by name")}/>
-            }>
+            initialItemsPerPage={window.userPrefPageSize}
+            searchField={<SearchField filter={this.searchData} placeholder={t("Filter by name")} />}
+          >
             <Column
-                columnKey="name"
-                comparator={Utils.sortByText}
-                header={t("System")}
-                cell={ (s) => <SystemLabel id={s.id} name={s.name} type={s.type} /> }
-                />
+              columnKey="name"
+              comparator={Utils.sortByText}
+              header={t("System")}
+              cell={s => <SystemLabel id={s.id} name={s.name} type={s.type} />}
+            />
             <Column
-                columnKey="cpuCount"
-                comparator={this.sortByCpuCount}
-                header={t("Socket/IFL count")}
-                cell={ (s) => s.cpuCount }
-                />
+              columnKey="cpuCount"
+              comparator={this.sortByCpuCount}
+              header={t("Socket/IFL count")}
+              cell={s => s.cpuCount}
+            />
             <Column
-                columnKey="products"
-                header={t("Products")}
-                cell={ (s) =>
-                    <ProductTableCell key="products" products={this.props.products}
-                        productIds={s.productIds} /> }
-                />
+              columnKey="products"
+              header={t("Products")}
+              cell={s => <ProductTableCell key="products" products={this.props.products} productIds={s.productIds} />}
+            />
             <Column
-                columnKey="actions"
-                cell={ (s) =>
-                      <PinButton
-                        onClick={() => this.onSystemSelected(s.id)}
-                        content={<span>{t("Select")} <i className="fa fa-arrow-right fa-right"></i></span>}
-                      /> }
+              columnKey="actions"
+              cell={s => (
+                <PinButton
+                  onClick={() => this.onSystemSelected(s.id)}
+                  content={
+                    <span>
+                      {t("Select")} <i className="fa fa-arrow-right fa-right"></i>
+                    </span>
+                  }
                 />
-           </Table>
-
+              )}
+            />
+          </Table>
         </div>
       );
-    }
-    else {
-      const system = this.props.systems[this.state.systemId];
+    } else {
+      const system = this.props.systems[systemId];
       popUpContent = (
         <div>
           <h4 className="add-pin-popup-subtitle">{t("Available Subscriptions for the Selected System")}</h4>
-          <p>{t("Step 2/2: pick a subscription for system ")}<strong>{system.name}</strong></p>
-          <PinSubscriptionSelector onSubscriptionSelected={this.onSubscriptionSelected}
-            subscriptions={system.possibleSubscriptionIds.map(
-            p => this.props.subscriptions[p]
-          )} />
+          <p>
+            {t("Step 2/2: pick a subscription for system ")}
+            <strong>{system.name}</strong>
+          </p>
+          <PinSubscriptionSelector
+            onSubscriptionSelected={this.onSubscriptionSelected}
+            subscriptions={system.possibleSubscriptionIds.map(p => this.props.subscriptions[p])}
+          />
           <p>
             <button className="btn btn-default" onClick={this.onBackClicked}>
               <i className="fa fa-arrow-left"></i>
@@ -273,78 +333,77 @@ class AddPinPopUp extends React.Component {
         </div>
       );
     }
-    return (popUpContent);
+    return popUpContent;
   }
 }
 
-const ProductTableCell = (props) => {
+const ProductTableCell = props => {
   const productLength = props.productIds.length;
 
-  if (productLength == 0){
-    return <span/>;
+  if (productLength === 0) {
+    return <span />;
   }
 
   const firstProductName = props.products[props.productIds[0]].productName;
-  if (productLength == 1) {
+  if (productLength === 1) {
     return <span>{firstProductName}</span>;
   }
 
   const productNames = props.productIds
     .map(i => props.products[i].productName)
     .reduce((previousValue, currentValue) => previousValue + ", " + currentValue);
-  return (
-      <ToolTip
-        content={firstProductName + ", ..."}
-        title={productNames}
-      />
-  );
+  return <ToolTip content={firstProductName + ", ..."} title={productNames} />;
 };
 
-class PinSubscriptionSelector extends React.Component {
+type PinSubscriptionSelectorProps = {
+  subscriptions: any[];
+  onSubscriptionSelected: (...args: any[]) => any;
+};
+
+class PinSubscriptionSelector extends React.Component<PinSubscriptionSelectorProps> {
   render() {
     if (this.props.subscriptions.length > 0) {
-       return (
-          <Table key="table"
-            data={this.props.subscriptions}
-            identifier={(row) => row.id}
-            initialItemsPerPage={userPrefPageSize}
-            >
-            <Column
-                columnKey="partNumber"
-                header={t("Part number")}
-                cell={ (s) => s.partNumber }
-                />
-            <Column
-                columnKey="description"
-                header={t("Description")}
-                cell={ (s) => s.description }
-                />
-            <Column
-                columnKey="policy"
-                header={t("Policy")}
-                cell={ (s) => humanReadablePolicy(s.policy) }
-                />
-            <Column
-                columnKey="endDate"
-                header={t("End date")}
-                cell={ (s) => <ToolTip content={moment(s.endDate).fromNow()}
-                                  title={moment(s.endDate).format("LL")} /> }
-                />
-            <Column
-                columnKey="actions"
-                cell={ (s) => <PinButton
-                          onClick={() => this.props.onSubscriptionSelected(s.id)}
-                          content={<span><i className="fa fa-map-pin"></i>{t("Save Pin")}</span>}
-                        /> }
-                />
-          </Table>);
-    }
-    else {
-      return <p>{t("No subscriptions have been found to match this system, considering all products installed, either directly or in virtual guests.")}</p>
+      return (
+        <Table
+          key="table"
+          data={this.props.subscriptions}
+          identifier={row => row.id}
+          initialItemsPerPage={window.userPrefPageSize}
+        >
+          <Column columnKey="partNumber" header={t("Part number")} cell={s => s.partNumber} />
+          <Column columnKey="description" header={t("Description")} cell={s => s.description} />
+          <Column columnKey="policy" header={t("Policy")} cell={s => humanReadablePolicy(s.policy)} />
+          <Column
+            columnKey="endDate"
+            header={t("End date")}
+            cell={s => <ToolTip content={moment(s.endDate).fromNow()} title={moment(s.endDate).format("LL")} />}
+          />
+          <Column
+            columnKey="actions"
+            cell={s => (
+              <PinButton
+                onClick={() => this.props.onSubscriptionSelected(s.id)}
+                content={
+                  <span>
+                    <i className="fa fa-map-pin"></i>
+                    {t("Save Pin")}
+                  </span>
+                }
+              />
+            )}
+          />
+        </Table>
+      );
+    } else {
+      return (
+        <p>
+          {t(
+            "No subscriptions have been found to match this system, considering all products installed, either directly or in virtual guests."
+          )}
+        </p>
+      );
     }
   }
 }
 
-export {
-  Pins,
-};
+export { Pins };

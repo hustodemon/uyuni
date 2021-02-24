@@ -1,44 +1,47 @@
-/* eslint-disable */
-"use strict";
+import * as React from "react";
+import { CsvLink, SystemLabel } from "./subscription-matching-util";
+import { PopUp } from "components/popup";
+import { ModalButton } from "components/dialog/ModalButton";
+import { Table } from "components/table/Table";
+import { Column } from "components/table/Column";
+import { SearchField } from "components/table/SearchField";
+import { Utils } from "utils/functions";
 
-import * as React from 'react';
-import { CsvLink, SystemLabel } from './subscription-matching-util';
-import { PopUp } from 'components/popup';
-import { ModalButton } from 'components/dialog/ModalButton';
-import { Table } from 'components/table/Table';
-import { Column } from 'components/table/Column';
-import { SearchField } from 'components/table/SearchField';
-import { Utils } from 'utils/functions';
+type UnmatchedProductsProps = {
+  unmatchedProductIds: any[];
+  systems: any[];
+  products: any[];
+};
 
-class UnmatchedProducts extends React.Component {
+class UnmatchedProducts extends React.Component<UnmatchedProductsProps> {
   state = {
-      selectedProductId: null
-  }
+    selectedProductId: null,
+  };
 
-  buildData = (props) => {
-      const products = props.products;
-      return props.unmatchedProductIds.map((pid) => {
-          const productName = products[pid].productName;
-          const systemCount = products[pid].unmatchedSystemCount;
-          return {
-                 id: pid,
-                 productName: productName,
-                 systemCount: systemCount
-               };
-       });
+  buildData = props => {
+    const products = props.products;
+    return props.unmatchedProductIds.map(pid => {
+      const productName = products[pid].productName;
+      const systemCount = products[pid].unmatchedSystemCount;
+      return {
+        id: pid,
+        productName: productName,
+        systemCount: systemCount,
+      };
+    });
   };
 
   sortBySystemCount = (a, b, columnKey, sortDirection) => {
-    var result = a[columnKey]- b[columnKey];
+    var result = a[columnKey] - b[columnKey];
     return (result || Utils.sortById(a, b)) * sortDirection;
   };
 
-  showPopUp = (id) => {
-    this.setState({selectedProductId: id});
+  showPopUp = id => {
+    this.setState({ selectedProductId: id });
   };
 
   closePopUp = () => {
-    this.setState({selectedProductId: null});
+    this.setState({ selectedProductId: null });
   };
 
   render() {
@@ -48,31 +51,33 @@ class UnmatchedProducts extends React.Component {
         <div>
           <Table
             data={this.buildData(this.props)}
-            identifier={(row) => row.id}
+            identifier={row => row.id}
             initialSortColumnKey="productName"
-            initialItemsPerPage={userPrefPageSize}
-            >
+            initialItemsPerPage={window.userPrefPageSize}
+          >
             <Column
-                columnKey="productName"
-                comparator={Utils.sortByText}
-                header={t("Product name")}
-                cell={ (row) => row.productName }
-                />
+              columnKey="productName"
+              comparator={Utils.sortByText}
+              header={t("Product name")}
+              cell={row => row.productName}
+            />
             <Column
-                columnKey="systemCount"
-                comparator={this.sortBySystemCount}
-                header={t("Unmatched system count")}
-                cell={ (row) => row.systemCount }
-                />
+              columnKey="systemCount"
+              comparator={this.sortBySystemCount}
+              header={t("Unmatched system count")}
+              cell={row => row.systemCount}
+            />
             <Column
-                cell={ (row) => <ModalButton
-                                className="btn-default btn-cell"
-                                title={t("Show system list")}
-                                text={t("Show system list")}
-                                target="unmatchedProductsPopUp"
-                                onClick={() => this.showPopUp(row.id)}
-                                /> }
+              cell={row => (
+                <ModalButton
+                  className="btn-default btn-cell"
+                  title={t("Show system list")}
+                  text={t("Show system list")}
+                  target="unmatchedProductsPopUp"
+                  onClick={() => this.showPopUp(row.id)}
                 />
+              )}
+            />
           </Table>
 
           <CsvLink name="unmatched_product_report.csv" />
@@ -85,9 +90,8 @@ class UnmatchedProducts extends React.Component {
           />
         </div>
       );
-    }
-    else {
-      body = <p>{t("No unmatching products are found.")}</p>
+    } else {
+      body = <p>{t("No unmatching products are found.")}</p>;
     }
 
     return (
@@ -99,20 +103,26 @@ class UnmatchedProducts extends React.Component {
   }
 }
 
+type UnmatchedSystemPopUpProps = {
+  systems: any[];
+  products: any[];
+  selectedProductId: any;
+  onClosePopUp?: (...args: any[]) => any;
+};
 
-class UnmatchedSystemPopUp extends React.Component {
-  buildTableData = (props) => {
+class UnmatchedSystemPopUp extends React.Component<UnmatchedSystemPopUpProps> {
+  buildTableData = props => {
     if (!props.selectedProductId) {
-        return [];
+      return [];
     }
     const product = props.products[props.selectedProductId];
     const systems = props.systems;
-    return product.unmatchedSystemIds.map((sid) => {
+    return product.unmatchedSystemIds.map(sid => {
       return {
         id: sid,
         systemName: systems[sid].name,
-        type: systems[sid].type
-      }
+        type: systems[sid].type,
+      };
     });
   };
 
@@ -124,25 +134,26 @@ class UnmatchedSystemPopUp extends React.Component {
   };
 
   render() {
-    const popUpContent = <Table
+    const popUpContent = (
+      <Table
         data={this.buildTableData(this.props)}
-        identifier={(row) => row.id}
+        identifier={row => row.id}
         initialSortColumnKey="systemName"
-        initialItemsPerPage={userPrefPageSize}
-        searchField={
-            <SearchField filter={this.searchData}
-              criteria={""}
-              placeholder={t("Filter by name")} />
-        }>
+        initialItemsPerPage={window.userPrefPageSize}
+        searchField={<SearchField filter={this.searchData} criteria={""} placeholder={t("Filter by name")} />}
+      >
         <Column
-            columnKey="systemName"
-            comparator={Utils.sortByText}
-            header={t("System name")}
-            cell={ (row) => <SystemLabel type={row.type} name={row.systemName} /> } />
-      </Table>;
+          columnKey="systemName"
+          comparator={Utils.sortByText}
+          header={t("System name")}
+          cell={row => <SystemLabel type={row.type} name={row.systemName} />}
+        />
+      </Table>
+    );
 
     return (
-      <PopUp title={t("Unmatched systems")}
+      <PopUp
+        title={t("Unmatched systems")}
         id="unmatchedProductsPopUp"
         content={popUpContent}
         onClosePopUp={this.props.onClosePopUp}
@@ -151,6 +162,4 @@ class UnmatchedSystemPopUp extends React.Component {
   }
 }
 
-export {
-  UnmatchedProducts,
-};
+export { UnmatchedProducts };

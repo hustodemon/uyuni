@@ -1,15 +1,19 @@
-/* eslint-disable */
-"use strict";
+import * as React from "react";
+import Network from "utils/network";
 
-import * as React from 'react';
-import Network from 'utils/network';
+type MatcherRunPanelProps = {
+  initialLatestStart?: any;
+  initialLatestEnd?: any;
+  dataAvailable?: boolean;
+  onMatcherRunSchedule: (...args: any[]) => any;
+};
 
-class MatcherRunPanel extends React.Component {
+class MatcherRunPanel extends React.Component<MatcherRunPanelProps> {
   state = {
     latestStart: this.props.initialLatestStart,
     latestEnd: this.props.initialLatestEnd,
     error: false,
-  }
+  };
 
   UNSAFE_componentWillReceiveProps(nextProps) {
     if (this.state.latestStart == null || nextProps.initialLatestStart >= this.state.latestStart) {
@@ -23,16 +27,15 @@ class MatcherRunPanel extends React.Component {
 
   onScheduled = () => {
     this.setState({
-        latestStart: new Date().toJSON(),
-        latestEnd: null,
-        error: false,
-      }
-    );
+      latestStart: new Date().toJSON(),
+      latestEnd: null,
+      error: false,
+    });
     this.props.onMatcherRunSchedule();
   };
 
   onError = () => {
-    this.setState({error: true});
+    this.setState({ error: true });
   };
 
   render() {
@@ -46,7 +49,11 @@ class MatcherRunPanel extends React.Component {
       <div className="row col-md-12">
         <h2>{t("Match data status")}</h2>
         <MatcherTaskDescription />
-        <MatcherRunDescription latestStart={this.state.latestStart} latestEnd={this.state.latestEnd} error={this.state.error} />
+        <MatcherRunDescription
+          latestStart={this.state.latestStart}
+          latestEnd={this.state.latestEnd}
+          error={this.state.error}
+        />
         <MatcherScheduleButton
           matcherRunning={!this.state.error && this.state.latestStart != null && this.state.latestEnd == null}
           onScheduled={this.onScheduled}
@@ -57,59 +64,86 @@ class MatcherRunPanel extends React.Component {
   }
 }
 
-const MatcherRunDescription = (props) => {
+type MatcherRunDescriptionProps = {
+  error?: any;
+  latestStart?: any;
+  latestEnd?: any;
+}
+
+const MatcherRunDescription = (props: MatcherRunDescriptionProps) => {
   if (props.error) {
-    return <div className="text-danger">{t("Could not start a matching run. Please contact your SUSE Manager administrator to make sure the task scheduler is running.")}</div>
+    return (
+      <div className="text-danger">
+        {t(
+          "Could not start a matching run. Please contact your SUSE Manager administrator to make sure the task scheduler is running."
+        )}
+      </div>
+    );
   }
 
   if (props.latestStart == null) {
     return (
       <div>
-        {t("No match data is currently available.")}<br/>
+        {t("No match data is currently available.")}
+        <br />
         {t("You can also trigger a first run now by clicking the button below.")}
       </div>
     );
   }
 
   if (props.latestEnd == null) {
-    return <div>{t("Matching data is currently being recomputed, it was started {0}.", moment(props.latestStart).fromNow())}</div>;
+    return (
+      <div>
+        {t("Matching data is currently being recomputed, it was started {0}.", moment(props.latestStart).fromNow())}
+      </div>
+    );
   }
 
-  return <div>{t("Latest successful match data was computed {0}, you can trigger a new run by clicking the button below.", moment(props.latestEnd).fromNow())}</div>;
-}
+  return (
+    <div>
+      {t(
+        "Latest successful match data was computed {0}, you can trigger a new run by clicking the button below.",
+        moment(props.latestEnd).fromNow()
+      )}
+    </div>
+  );
+};
 
-const MatcherTaskDescription = () =>
+const MatcherTaskDescription = () => (
   <div>
     {t("Match data is computed via a task schedule, nightly by default (you can ")}
-    <a href="/rhn/admin/BunchDetail.do?label=gatherer-matcher-bunch">{t("change the task schedule from the administration page")}</a>
+    <a href="/rhn/admin/BunchDetail.do?label=gatherer-matcher-bunch">
+      {t("change the task schedule from the administration page")}
+    </a>
     {t("). ")}
   </div>
-;
+);
 
-class MatcherScheduleButton extends React.Component {
+type MatcherScheduleButtonProps = {
+  onError: (...args: any[]) => any;
+  onScheduled: (...args: any[]) => any;
+  matcherRunning?: boolean;
+};
+
+class MatcherScheduleButton extends React.Component<MatcherScheduleButtonProps> {
   onClick = () => {
-    Network.post("/rhn/manager/api/subscription-matching/schedule-matcher-run")
-      .promise.catch(() => this.props.onError());
+    Network.post("/rhn/manager/api/subscription-matching/schedule-matcher-run").promise.catch(() =>
+      this.props.onError()
+    );
     this.props.onScheduled();
   };
 
   render() {
-    const buttonClass = "btn spacewalk-btn-margin-vertical " +
-      (!this.props.matcherRunning ? "btn-success" : "btn-default");
+    const buttonClass =
+      "btn spacewalk-btn-margin-vertical " + (!this.props.matcherRunning ? "btn-success" : "btn-default");
 
     return (
-      <button
-        type="button"
-        className={buttonClass}
-        disabled={this.props.matcherRunning}
-        onClick={this.onClick}
-      >
-        <i className="fa fa-refresh"></i>{t("Refresh matching data")}
+      <button type="button" className={buttonClass} disabled={this.props.matcherRunning} onClick={this.onClick}>
+        <i className="fa fa-refresh"></i>
+        {t("Refresh matching data")}
       </button>
     );
   }
 }
 
-export {
-  MatcherRunPanel,
-};
+export { MatcherRunPanel };
