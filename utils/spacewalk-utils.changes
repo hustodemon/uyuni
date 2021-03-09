@@ -1,3 +1,5 @@
+- Align the modules.yaml of target channel after cloning errata (bsc#1182810)
+
 -------------------------------------------------------------------
 Wed Jan 27 13:06:52 CET 2021 - jgonzalez@suse.com
 

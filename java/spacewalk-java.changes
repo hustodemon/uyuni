@@ -1,3 +1,5 @@
+XMLRPC: Endpoint for aligning channel metadata based on another channel (bsc#1182810)
+
 -------------------------------------------------------------------
 Fri Mar 05 15:42:30 CET 2021 - jgonzalez@suse.com
 
