@@ -8,7 +8,7 @@ on:
 jobs:
  run:
    name: Update translation files
-   if: github.repository == 'uyuni-project/uyuni'
+   #if: github.repository == 'uyuni-project/uyuni'
    runs-on: ubuntu-latest
    steps:
    - name: Cancel Previous Runs
@@ -16,11 +16,25 @@ jobs:
      with:
          access_token: ${{ github.token }}
 
+   - name: Prepare Weblate config file
+     shell: bash
+     run: |
+         echo "[weblate]
+         url = https://l10n.opensuse.org/api/
+         [keys]
+         https://hosted.weblate.org/api/ = $WEBLATE_API_KEY
+         " > ~/.weblate
+     env:
+         WEBLATE_API_KEY: ${{ secrets.WEBLATE_API_KEY }}
+
+   - name: Setup tmate session
+     uses: mxschmitt/action-tmate@v3
+
    - name: Checkout repo
      uses: actions/checkout@v2
 
    - name: Setup tooling
-     run: sudo apt-get install -y make git gettext intltool python3
+     run: sudo apt-get install -y make git gettext intltool python3 wlc
 
    - name: Setup git
      run: |
@@ -33,5 +47,5 @@ jobs:
        ADDITIONAL_SAFE_BRANCHNAME: master
        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-   - name: Push changes
-     run: git push origin HEAD
+       #   - name: Push changes
+       #     run: git push origin HEAD
