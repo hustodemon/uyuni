@@ -22,8 +22,7 @@ jobs:
          echo "[weblate]
          url = https://l10n.opensuse.org/api/
          [keys]
-         https://hosted.weblate.org/api/ = $WEBLATE_API_KEY
-         " > ~/.weblate
+         https://hosted.weblate.org/api/ = $WEBLATE_API_KEY" > ~/.weblate
      env:
          WEBLATE_API_KEY: ${{ secrets.WEBLATE_API_KEY }}
 
