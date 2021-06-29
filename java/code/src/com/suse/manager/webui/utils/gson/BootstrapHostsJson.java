@@ -32,20 +32,26 @@ public class BootstrapHostsJson {
     private String host;
     private String port = "22";
     private String user = "root";
-    private String password;
     private AuthMethod authMethod;
+    private String password;
     private String privKey;
     private String privKeyPwd;
+    private Long ansibleInventoryId;
     private List<String> activationKeys;
     private boolean ignoreHostKeys;
     private Long proxy;
 
     /**
-     * Authentication method for bootstrapping
+     * Authentication method for bootstrapping:
+     *
+     * PASSWORD: authentication with a password
+     * SSH_KEY: authentication with an ssh key
+     * ANSIBLE_PREAUTH: authenticate using ansible before bootstrapping
      */
     public enum AuthMethod {
         PASSWORD,
-        SSH_KEY;
+        SSH_KEY,
+        ANSIBLE_PREAUTH;
 
         /**
          * Create an {@link AuthMethod} from string
@@ -59,6 +65,8 @@ public class BootstrapHostsJson {
                     return PASSWORD;
                 case "ssh-key":
                     return SSH_KEY;
+                case "ansible-preauth":
+                    return ANSIBLE_PREAUTH;
                 default:
                     throw new IllegalArgumentException(String.format("Can't convert '%s' to auth method enum.", val));
             }
@@ -202,6 +210,15 @@ public class BootstrapHostsJson {
      */
     public Optional<String> maybeGetPrivKeyPwd() {
         return maybeGetString(getPrivKeyPwd());
+    }
+
+    /**
+     * Gets the ansibleInventoryId.
+     *
+     * @return ansibleInventoryId
+     */
+    public Long getAnsibleInventoryId() {
+        return ansibleInventoryId;
     }
 
     private static Optional<String> maybeGetString(String str) {
