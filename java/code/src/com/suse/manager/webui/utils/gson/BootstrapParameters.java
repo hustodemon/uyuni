@@ -15,6 +15,7 @@
 package com.suse.manager.webui.utils.gson;
 
 import static com.suse.manager.webui.utils.gson.BootstrapHostsJson.AuthMethod;
+import static java.util.Optional.of;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +32,7 @@ public class BootstrapParameters {
     private Optional<String> password;
     private Optional<String> privateKey;
     private Optional<String> privateKeyPassphrase;
+    private Optional<Long> ansibleInventoryId;
     private List<String> activationKeys;
     private boolean ignoreHostKeys;
     private Optional<Long> proxyId;
@@ -78,8 +80,33 @@ public class BootstrapParameters {
         this.port = portIn;
         this.user = userIn;
         this.password = Optional.empty();
-        this.privateKey = Optional.of(privateKeyIn);
+        this.privateKey = of(privateKeyIn);
         this.privateKeyPassphrase = privateKeyPwdIn;
+        this.activationKeys = activationKeysIn;
+        this.ignoreHostKeys = ignoreHostKeysIn;
+        this.proxyId = proxyIdIn;
+    }
+
+    /**
+     * Create {@link BootstrapParameters} for Ansible pre-authentication.
+     *
+     * @param hostIn host
+     * @param portIn port
+     * @param userIn user
+     * @param ansibleInventoryIdIn the id of the Ansible Inventory Path
+     * @param activationKeysIn activation keys
+     * @param ignoreHostKeysIn ignore hostIn keys?
+     * @param proxyIdIn proxy id
+     */
+    public BootstrapParameters(String hostIn, Optional<Integer> portIn, String userIn, Long ansibleInventoryIdIn,
+            List<String> activationKeysIn, boolean ignoreHostKeysIn, Optional<Long> proxyIdIn) {
+        this.host = hostIn;
+        this.port = portIn;
+        this.user = userIn;
+        this.password = Optional.empty();
+        this.privateKey = Optional.empty();
+        this.privateKeyPassphrase = Optional.empty();
+        this.ansibleInventoryId = of(ansibleInventoryIdIn);
         this.activationKeys = activationKeysIn;
         this.ignoreHostKeys = ignoreHostKeysIn;
         this.proxyId = proxyIdIn;
@@ -102,6 +129,10 @@ public class BootstrapParameters {
                 return new BootstrapParameters(json.getHost(), json.getPortInteger(), json.getUser(),
                         json.getPrivKey(), json.maybeGetPrivKeyPwd(), json.getActivationKeys(),
                         json.getIgnoreHostKeys(), Optional.ofNullable(json.getProxy()));
+            case ANSIBLE_PREAUTH:
+                return new BootstrapParameters(json.getHost(), json.getPortInteger(), json.getUser(),
+                        json.getAnsibleInventoryId(), json.getActivationKeys(), json.getIgnoreHostKeys(),
+                        Optional.ofNullable(json.getProxy()));
             default:
                 throw new UnsupportedOperationException("Unsupported auth method " + authMethod);
         }
@@ -266,5 +297,14 @@ public class BootstrapParameters {
      */
     public Optional<Long> getProxyId() {
         return proxyId;
+    }
+
+    /**
+     * Gets the ansibleInventoryId.
+     *
+     * @return ansibleInventoryId
+     */
+    public Optional<Long> getAnsibleInventoryId() {
+        return ansibleInventoryId;
     }
 }
