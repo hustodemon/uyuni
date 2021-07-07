@@ -15,6 +15,7 @@
 package com.suse.manager.webui.utils.gson;
 
 import static com.suse.manager.webui.utils.gson.BootstrapHostsJson.AuthMethod;
+import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
 import java.util.List;
@@ -29,10 +30,10 @@ public class BootstrapParameters {
     private String host;
     private Optional<Integer> port;
     private String user;
-    private Optional<String> password;
-    private Optional<String> privateKey;
-    private Optional<String> privateKeyPassphrase;
-    private Optional<Long> ansibleInventoryId;
+    private Optional<String> password = empty();
+    private Optional<String> privateKey = empty();
+    private Optional<String> privateKeyPassphrase = empty();
+    private Optional<Long> ansibleInventoryId = empty();
     private List<String> activationKeys;
     private boolean ignoreHostKeys;
     private Optional<Long> proxyId;
@@ -54,8 +55,6 @@ public class BootstrapParameters {
         this.port = portIn;
         this.user = userIn;
         this.password = passwordIn;
-        this.privateKey = Optional.empty();
-        this.privateKeyPassphrase = Optional.empty();
         this.activationKeys = activationKeysIn;
         this.ignoreHostKeys = ignoreHostKeysIn;
         this.proxyId = proxyIdIn;
@@ -79,7 +78,6 @@ public class BootstrapParameters {
         this.host = hostIn;
         this.port = portIn;
         this.user = userIn;
-        this.password = Optional.empty();
         this.privateKey = of(privateKeyIn);
         this.privateKeyPassphrase = privateKeyPwdIn;
         this.activationKeys = activationKeysIn;
@@ -103,9 +101,6 @@ public class BootstrapParameters {
         this.host = hostIn;
         this.port = portIn;
         this.user = userIn;
-        this.password = Optional.empty();
-        this.privateKey = Optional.empty();
-        this.privateKeyPassphrase = Optional.empty();
         this.ansibleInventoryId = of(ansibleInventoryIdIn);
         this.activationKeys = activationKeysIn;
         this.ignoreHostKeys = ignoreHostKeysIn;
